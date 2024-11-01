@@ -737,7 +737,7 @@ class StudentUSocket(StudentUSocketBase):
     acceptable_seg()
     """
     ## Start of Stage 4.2 ##
-    self.snd.una = seg.ack |PLUS| 1
+    self.snd.una = seg.ack
 
     ## End of Stage 4.2 ##
 
@@ -791,12 +791,12 @@ class StudentUSocket(StudentUSocketBase):
     # fifth, check ACK field
     if self.state in (ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSE_WAIT, CLOSING):
       ## Start of Stage 4.1 ##
-      if snd.una |GE| seg.ack:
-        continue_after_ack = False
-      elif snd.una |LE| seg.ack and seg.ack |LE| snd.nxt:
-        self.handle_accepted_ack(seg)
-      else:
+      if seg.ack |GT| snd.nxt:
         return False
+      elif snd.una |GT| seg.ack:
+        continue_after_ack = False
+      else:
+        self.handle_accepted_ack(seg)
         
       ## End of Stage 4.1 ##
 
