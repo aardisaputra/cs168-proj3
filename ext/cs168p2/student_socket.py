@@ -723,7 +723,7 @@ class StudentUSocket(StudentUSocketBase):
     """
 
     ## Start of Stage 5.1 ##
-    self.snd.wnd = self.TX_DATA_MAX # remove when implemented
+    self.snd.wnd = seg.win
     self.snd.wl1 = seg.seq
     self.snd.wl2 = seg.ack
 
@@ -867,13 +867,13 @@ class StudentUSocket(StudentUSocketBase):
     bytes_sent = 0
 
     ## Start of Stage 4.3 ##
-    remaining = snd.wnd |MINUS| snd.nxt |PLUS| 1
-    while remaining > 0:
+    remaining = snd.wnd |MINUS| (snd.nxt |MINUS| snd.una)
+    while remaining > 0 and bytes_sent < remaining:
 
       if len(self.tx_data) == 0:
         break
 
-      curr_packet_size = min(self.mss, len(self.tx_data))
+      curr_packet_size = min(self.mss, len(self.tx_data), remaining - bytes_sent)
       curr_packet_payload = self.tx_data[:curr_packet_size]
       # self.log.debug("sent {0}  wowowo".format(curr_packet_payload))
       self.tx_data = self.tx_data[curr_packet_size:]
@@ -881,7 +881,7 @@ class StudentUSocket(StudentUSocketBase):
       self.tx(self.new_packet(data=curr_packet_payload))
 
       num_pkts += 1
-      bytes_sent += len(curr_packet_payload)
+      bytes_sent += curr_packet_size
 
     self.log.debug("sent {0} packets with {1} bytes total".format(num_pkts, bytes_sent))
     ## End of Stage 4.3 ##
