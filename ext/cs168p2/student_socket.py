@@ -867,7 +867,7 @@ class StudentUSocket(StudentUSocketBase):
     bytes_sent = 0
 
     ## Start of Stage 4.3 ##
-    remaining = snd.wnd |MINUS| snd.nxt
+    remaining = snd.wnd |MINUS| snd.nxt |PLUS| 1
     while remaining > 0:
 
       if len(self.tx_data) == 0:
@@ -875,10 +875,10 @@ class StudentUSocket(StudentUSocketBase):
 
       curr_packet_size = min(self.mss, len(self.tx_data))
       curr_packet_payload = self.tx_data[:curr_packet_size]
+      # self.log.debug("sent {0}  wowowo".format(curr_packet_payload))
       self.tx_data = self.tx_data[curr_packet_size:]
 
-      p = self.new_packet(ack=False, data=curr_packet_payload, syn=False)
-      self.tx(p)
+      self.tx(self.new_packet(data=curr_packet_payload))
 
       num_pkts += 1
       bytes_sent += len(curr_packet_payload)
