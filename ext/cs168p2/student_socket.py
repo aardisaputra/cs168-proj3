@@ -688,6 +688,20 @@ class StudentUSocket(StudentUSocketBase):
     """
 
     ## Start of Stage 9.1 ##
+    R = self.stack.now - acked_pkt.tx_ts
+    if self.rto == 1 and self.srtt == 0 and self.rttvar == 0:
+      self.srtt = R
+      self.rttvar = R / 2
+      self.rto = self.srtt + max(self.G, self.K * self.rttvar)
+    else:
+      self.rttvar = (1-self.beta) * self.rttvar + self.beta * abs(self.srtt - R)
+      self.srtt = (1-self.alpha) * self.srtt + self.alpha * R
+      self.rto = self.srtt + max(self.G, self.K * self.rttvar)
+
+    if self.rto > self.MAX_RTO:
+      self.rto = self.MAX_RTO
+    elif self.rto < self.MIN_RTO:
+      self.rto = self.MIN_RTO
 
     ## End of Stage 9.1 ##
 
@@ -743,13 +757,12 @@ class StudentUSocket(StudentUSocketBase):
 
 
     ## Start of Stage 8.2 ##
-    self.retx_queue.pop_upto(seg.ack)
+    acked_pkts = self.retx_queue.pop_upto(seg.ack)
     ## End of Stage 8.2 ##
 
 
     ## Start of Stage 9.2 ##
 
-    acked_pkts = [] # remove when implemented
     for (ackno, p) in acked_pkts:
       if not p.retxed:
         self.update_rto(p)
@@ -937,6 +950,10 @@ class StudentUSocket(StudentUSocketBase):
       self.tx(p, retxed=True)
 
       ## Start of Stage 9.3 ##
+
+      self.rto = self.rto * 2
+      if self.rto > self.MAX_RTO:
+        self.rto = self.MAX_RTO
 
       ## End of Stage 9.3 ##
 
